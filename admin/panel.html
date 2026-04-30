@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard | Social Map</title>
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6f8; margin: 0; padding: 0; }
+    .header { background: #d32f2f; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    .header h2 { margin: 0; font-size: 20px; font-weight: 900; letter-spacing: 1px; }
+    .user-info { font-size: 14px; font-weight: bold; }
+    .logout-btn { background: #fff; color: #d32f2f; border: none; padding: 6px 15px; border-radius: 5px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+    .logout-btn:hover { background: #fde4e4; }
+    
+    .container { display: flex; flex-wrap: wrap; padding: 20px; gap: 20px; }
+    .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); flex: 1; min-width: 300px; }
+    .card h3 { margin-top: 0; color: #333; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+    
+    .form-group { margin-bottom: 15px; }
+    .form-group label { display: block; font-size: 13px; color: #555; margin-bottom: 5px; font-weight: bold; }
+    .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 14px; }
+    .btn-save { background: #2e7d32; color: white; border: none; padding: 12px; width: 100%; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 15px; }
+    .btn-save:hover { background: #1b5e20; }
+    
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
+    table th, table td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+    table th { background-color: #f8f9fa; color: #333; }
+    .btn-edit { background: #1976d2; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+    
+    .msg-box { padding: 10px; border-radius: 5px; margin-bottom: 15px; display: none; font-weight: bold; text-align: center; font-size: 14px; }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <h2>🔴 SOCIAL MAP ADMIN</h2>
+    <div class="user-info">
+      <span id="staffNameDisplay">Loading...</span> | 
+      <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- පාරිභෝගිකයින් ඇතුළත් කරන ෆෝම් එක [Data Entry Form] -->
+    <div class="card" style="flex: 1;">
+      <h3>පාරිභෝගික තොරතුරු [Add/Edit Customer]</h3>
+      <div id="statusMsg" class="msg-box"></div>
+      
+      <div class="form-group">
+        <label>Customer ID (උදා: 102)</label>
+        <input type="text" id="c_id" placeholder="ID එක මෙහි ගහන්න">
+      </div>
+      <div class="form-group">
+        <label>Business Name (ව්‍යාපාරයේ නම)</label>
+        <input type="text" id="c_name" placeholder="නම මෙහි ගහන්න">
+      </div>
+      <div class="form-group">
+        <label>Profile Type</label>
+        <select id="c_type">
+          <option value="profile">Smart Profile (ලින්ක් කිහිපයක් පෙන්වීමට)</option>
+          <option value="redirect">Direct Redirect (කෙලින්ම යොමු කිරීමට)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>WhatsApp Link</label>
+        <input type="text" id="c_wa" placeholder="https://wa.me/...">
+      </div>
+      <div class="form-group">
+        <label>Status (තත්වය)</label>
+        <select id="c_status">
+          <option value="Active">Active (ක්‍රියාකාරී)</option>
+          <option value="Inactive">Inactive (අක්‍රියයි)</option>
+        </select>
+      </div>
+      <button class="btn-save" onclick="saveData()" id="saveBtn">Save Data (සුරකින්න)</button>
+    </div>
+
+    <!-- දැනට ඉන්න පාරිභෝගිකයින් පෙන්වන වගුව [Data Table] -->
+    <div class="card" style="flex: 2;">
+      <h3>පාරිභෝගික ලැයිස්තුව [Customer List]</h3>
+      <div style="overflow-x:auto;">
+        <table id="customerTable">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Name</th>
+              <th>Type</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody">
+            <tr><td colspan="5">Loading data...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 👇 ඔයාගේ Web App URL එක හරියටම මෙතනට දාන්න 👇
+    const APPS_SCRIPT_URL = "මhttps://script.google.com/macros/s/AKfycbzUNv3bLJX2yfMmxfoWtDyETRQ3r0yLkC5eSA9kI4DTccE-UXV471luYE7_ZXB9sLfy/exec";
+
+    // ආරක්ෂක පරීක්ෂාව [Authentication Check]
+    const staffName = sessionStorage.getItem('loggedInStaff');
+    const staffId = sessionStorage.getItem('loggedInStaffId');
+    
+    if(!staffName || !staffId) {
+      window.location.href = "index.html"; // ලොග් වෙලා නැත්නම් ආපහු එලවනවා
+    } else {
+      document.getElementById('staffNameDisplay').innerText = "Staff: " + staffName;
+      loadCustomers(); // ලොග් වෙලා ඉන්නවා නම් දත්ත ගන්නවා
+    }
+
+    // පාරිභෝගික දත්ත ලබා ගැනීම [Fetch Customers]
+    function loadCustomers() {
+      fetch(`${APPS_SCRIPT_URL}?action=getAll`)
+        .then(res => res.json())
+        .then(data => {
+          const tbody = document.getElementById('tableBody');
+          tbody.innerHTML = "";
+          
+          if(data.success && data.data.length > 0) {
+            data.data.forEach(cust => {
+              const row = `<tr>
+                <td><b>${cust.ID}</b></td>
+                <td>${cust.BusinessName}</td>
+                <td>${cust.Type}</td>
+                <td><span style="color:${cust.Status==='Active'?'green':'red'}">${cust.Status}</span></td>
+                <td><button class="btn-edit" onclick="editCustomer('${cust.ID}', '${cust.BusinessName}', '${cust.Type}', '${cust.WhatsApp}', '${cust.Status}')">Edit</button></td>
+              </tr>`;
+              tbody.innerHTML += row;
+            });
+          } else {
+            tbody.innerHTML = "<tr><td colspan='5'>දැනට පාරිභෝගිකයින් කිසිවෙකු නොමැත.</td></tr>";
+          }
+        })
+        .catch(err => console.log(err));
+    }
+
+    // ෆෝම් එකේ දත්ත සුරැකීම [Save/POST Data]
+    function saveData() {
+      const btn = document.getElementById('saveBtn');
+      const msgBox = document.getElementById('statusMsg');
+      
+      const payload = {
+        action: "saveCustomer",
+        staffId: staffId,
+        staffName: staffName,
+        customerData: {
+          ID: document.getElementById('c_id').value,
+          BusinessName: document.getElementById('c_name').value,
+          Type: document.getElementById('c_type').value,
+          WhatsApp: document.getElementById('c_wa').value,
+          Status: document.getElementById('c_status').value
+        }
+      };
+
+      if(!payload.customerData.ID || !payload.customerData.BusinessName) {
+        msgBox.style.display = "block";
+        msgBox.style.background = "#fde4e4";
+        msgBox.style.color = "red";
+        msgBox.innerText = "ID සහ Name අනිවාර්යයෙන් ඇතුළත් කරන්න!";
+        return;
+      }
+
+      btn.innerText = "Saving...";
+      btn.disabled = true;
+
+      fetch(APPS_SCRIPT_URL, {
+        method: "POST",
+        body: JSON.stringify(payload)
+      })
+      .then(res => res.json())
+      .then(data => {
+        btn.innerText = "Save Data (සුරකින්න)";
+        btn.disabled = false;
+        msgBox.style.display = "block";
+        
+        if(data.success) {
+          msgBox.style.background = "#e8f5e9";
+          msgBox.style.color = "green";
+          msgBox.innerText = data.message;
+          loadCustomers(); // වගුව අලුත් කිරීම
+        } else {
+          msgBox.style.background = "#fde4e4";
+          msgBox.style.color = "red";
+          msgBox.innerText = data.error;
+        }
+      });
+    }
+
+    // Edit බොත්තම එබූ විට ෆෝම් එකට දත්ත දැමීම [Populate Form]
+    function editCustomer(id, name, type, wa, status) {
+      document.getElementById('c_id').value = id;
+      document.getElementById('c_name').value = name;
+      document.getElementById('c_type').value = type;
+      document.getElementById('c_wa').value = wa !== 'undefined' ? wa : '';
+      document.getElementById('c_status').value = status;
+      window.scrollTo(0, 0); // පිටුවේ උඩටම යැවීම
+    }
+
+    // සිස්ටම් එකෙන් ඉවත් වීම [Logout Session]
+    function logout() {
+      sessionStorage.clear();
+      window.location.href = "index.html";
+    }
+  </script>
+</body>
+</html>

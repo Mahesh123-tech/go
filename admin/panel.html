@@ -19,6 +19,10 @@
     .form-group { margin-bottom: 15px; }
     .form-group label { display: block; font-size: 13px; color: #555; margin-bottom: 5px; font-weight: bold; }
     .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 14px; }
+    
+    .links-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background: #f9f9f9; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #eee; }
+    .links-grid .form-group { margin-bottom: 0; }
+    
     .btn-save { background: #2e7d32; color: white; border: none; padding: 12px; width: 100%; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 15px; }
     .btn-save:hover { background: #1b5e20; }
     
@@ -28,6 +32,10 @@
     .btn-edit { background: #1976d2; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; }
     
     .msg-box { padding: 10px; border-radius: 5px; margin-bottom: 15px; display: none; font-weight: bold; text-align: center; font-size: 14px; }
+    
+    @media (max-width: 600px) {
+      .links-grid { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
@@ -41,7 +49,7 @@
   </div>
 
   <div class="container">
-    <!-- පාරිභෝගිකයින් ඇතුළත් කරන ෆෝම් එක [Data Entry Form] -->
+    <!-- පාරිභෝගිකයින් ඇතුළත් කරන ෆෝම් එක -->
     <div class="card" style="flex: 1;">
       <h3>පාරිභෝගික තොරතුරු [Add/Edit Customer]</h3>
       <div id="statusMsg" class="msg-box"></div>
@@ -61,10 +69,31 @@
           <option value="redirect">Direct Redirect (කෙලින්ම යොමු කිරීමට)</option>
         </select>
       </div>
-      <div class="form-group">
-        <label>WhatsApp Link</label>
-        <input type="text" id="c_wa" placeholder="https://wa.me/...">
+
+      <!-- Links ඇතුළත් කරන කොටස -->
+      <div class="links-grid">
+        <div class="form-group">
+          <label>💬 WhatsApp Link</label>
+          <input type="text" id="c_wa" placeholder="https://wa.me/...">
+        </div>
+        <div class="form-group">
+          <label>📍 Google Maps Link</label>
+          <input type="text" id="c_maps" placeholder="https://maps.app.goo.gl/...">
+        </div>
+        <div class="form-group">
+          <label>📘 Facebook Link</label>
+          <input type="text" id="c_fb" placeholder="https://facebook.com/...">
+        </div>
+        <div class="form-group">
+          <label>📸 Instagram Link</label>
+          <input type="text" id="c_ig" placeholder="https://instagram.com/...">
+        </div>
+        <div class="form-group" style="grid-column: 1 / -1;">
+          <label>📄 Menu PDF Link (Google Drive)</label>
+          <input type="text" id="c_menu" placeholder="https://drive.google.com/...">
+        </div>
       </div>
+
       <div class="form-group">
         <label>Status (තත්වය)</label>
         <select id="c_status">
@@ -75,7 +104,7 @@
       <button class="btn-save" onclick="saveData()" id="saveBtn">Save Data (සුරකින්න)</button>
     </div>
 
-    <!-- දැනට ඉන්න පාරිභෝගිකයින් පෙන්වන වගුව [Data Table] -->
+    <!-- පාරිභෝගිකයින් පෙන්වන වගුව -->
     <div class="card" style="flex: 2;">
       <h3>පාරිභෝගික ලැයිස්තුව [Customer List]</h3>
       <div style="overflow-x:auto;">
@@ -99,20 +128,18 @@
 
   <script>
     // 👇 ඔයාගේ Web App URL එක හරියටම මෙතනට දාන්න 👇
-    const APPS_SCRIPT_URL = "මhttps://script.google.com/macros/s/AKfycbzUNv3bLJX2yfMmxfoWtDyETRQ3r0yLkC5eSA9kI4DTccE-UXV471luYE7_ZXB9sLfy/exec";
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzUNv3bLJX2yfMmxfoWtDyETRQ3r0yLkC5eSA9kI4DTccE-UXV471luYE7_ZXB9sLfy/exec";
 
-    // ආරක්ෂක පරීක්ෂාව [Authentication Check]
     const staffName = sessionStorage.getItem('loggedInStaff');
     const staffId = sessionStorage.getItem('loggedInStaffId');
     
     if(!staffName || !staffId) {
-      window.location.href = "index.html"; // ලොග් වෙලා නැත්නම් ආපහු එලවනවා
+      window.location.href = "index.html"; 
     } else {
       document.getElementById('staffNameDisplay').innerText = "Staff: " + staffName;
-      loadCustomers(); // ලොග් වෙලා ඉන්නවා නම් දත්ත ගන්නවා
+      loadCustomers(); 
     }
 
-    // පාරිභෝගික දත්ත ලබා ගැනීම [Fetch Customers]
     function loadCustomers() {
       fetch(`${APPS_SCRIPT_URL}?action=getAll`)
         .then(res => res.json())
@@ -122,12 +149,15 @@
           
           if(data.success && data.data.length > 0) {
             data.data.forEach(cust => {
+              // Edit බොත්තම එබූ විට සියලුම දත්ත පාස් කිරීම
+              const btnHtml = `<button class="btn-edit" onclick="editCustomer('${cust.ID}', '${cust.BusinessName}', '${cust.Type}', '${cust.WhatsApp}', '${cust.Maps}', '${cust.Facebook}', '${cust.Instagram}', '${cust.MenuPDF}', '${cust.Status}')">Edit</button>`;
+              
               const row = `<tr>
                 <td><b>${cust.ID}</b></td>
                 <td>${cust.BusinessName}</td>
                 <td>${cust.Type}</td>
                 <td><span style="color:${cust.Status==='Active'?'green':'red'}">${cust.Status}</span></td>
-                <td><button class="btn-edit" onclick="editCustomer('${cust.ID}', '${cust.BusinessName}', '${cust.Type}', '${cust.WhatsApp}', '${cust.Status}')">Edit</button></td>
+                <td>${btnHtml}</td>
               </tr>`;
               tbody.innerHTML += row;
             });
@@ -138,7 +168,6 @@
         .catch(err => console.log(err));
     }
 
-    // ෆෝම් එකේ දත්ත සුරැකීම [Save/POST Data]
     function saveData() {
       const btn = document.getElementById('saveBtn');
       const msgBox = document.getElementById('statusMsg');
@@ -152,6 +181,10 @@
           BusinessName: document.getElementById('c_name').value,
           Type: document.getElementById('c_type').value,
           WhatsApp: document.getElementById('c_wa').value,
+          Maps: document.getElementById('c_maps').value,
+          Facebook: document.getElementById('c_fb').value,
+          Instagram: document.getElementById('c_ig').value,
+          MenuPDF: document.getElementById('c_menu').value,
           Status: document.getElementById('c_status').value
         }
       };
@@ -181,7 +214,7 @@
           msgBox.style.background = "#e8f5e9";
           msgBox.style.color = "green";
           msgBox.innerText = data.message;
-          loadCustomers(); // වගුව අලුත් කිරීම
+          loadCustomers(); 
         } else {
           msgBox.style.background = "#fde4e4";
           msgBox.style.color = "red";
@@ -190,17 +223,19 @@
       });
     }
 
-    // Edit බොත්තම එබූ විට ෆෝම් එකට දත්ත දැමීම [Populate Form]
-    function editCustomer(id, name, type, wa, status) {
+    function editCustomer(id, name, type, wa, maps, fb, ig, menu, status) {
       document.getElementById('c_id').value = id;
       document.getElementById('c_name').value = name;
       document.getElementById('c_type').value = type;
-      document.getElementById('c_wa').value = wa !== 'undefined' ? wa : '';
+      document.getElementById('c_wa').value = (wa !== 'undefined' && wa !== 'null') ? wa : '';
+      document.getElementById('c_maps').value = (maps !== 'undefined' && maps !== 'null') ? maps : '';
+      document.getElementById('c_fb').value = (fb !== 'undefined' && fb !== 'null') ? fb : '';
+      document.getElementById('c_ig').value = (ig !== 'undefined' && ig !== 'null') ? ig : '';
+      document.getElementById('c_menu').value = (menu !== 'undefined' && menu !== 'null') ? menu : '';
       document.getElementById('c_status').value = status;
-      window.scrollTo(0, 0); // පිටුවේ උඩටම යැවීම
+      window.scrollTo(0, 0); 
     }
 
-    // සිස්ටම් එකෙන් ඉවත් වීම [Logout Session]
     function logout() {
       sessionStorage.clear();
       window.location.href = "index.html";

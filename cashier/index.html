@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cashier Portal | Social Map</title>
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+    .container { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center; }
+    
+    .header { margin-bottom: 25px; }
+    .header h2 { margin: 0; color: #333; font-size: 24px; }
+    .header p { margin: 5px 0 0 0; color: #777; font-size: 14px; }
+    
+    .shop-id-badge { display: inline-block; background: #ffebee; color: #d32f2f; padding: 5px 15px; border-radius: 20px; font-weight: bold; margin-bottom: 20px; font-size: 14px;}
+
+    .input-group { margin-bottom: 20px; text-align: left; }
+    label { font-weight: bold; font-size: 14px; color: #555; display: block; margin-bottom: 8px; }
+    input { width: 100%; padding: 15px; border: 2px solid #ddd; border-radius: 10px; font-size: 18px; text-align: center; box-sizing: border-box; letter-spacing: 2px;}
+    input:focus { border-color: #d32f2f; outline: none; }
+
+    .btn { width: 100%; padding: 15px; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; transition: transform 0.1s; margin-bottom: 10px; color: white;}
+    .btn:active { transform: scale(0.98); }
+    
+    .btn-add { background-color: #2e7d32; }
+    .btn-redeem { background-color: #ff9800; }
+    .btn-reset { background-color: #757575; }
+
+    .msg { padding: 15px; margin-top: 15px; border-radius: 8px; font-weight: bold; display: none; }
+    .success { background: #d4edda; color: #155724; }
+    .error { background: #f8d7da; color: #721c24; }
+
+    /* Loader */
+    .loader { display: none; margin: 20px auto; border: 4px solid #f3f3f3; border-top: 4px solid #d32f2f; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="header">
+      <h2>🎁 Loyalty Cashier</h2>
+      <p>පාරිභෝගික මුද්දර ලබාදීම</p>
+    </div>
+
+    <div class="shop-id-badge" id="shopIdDisplay">Shop ID: Loading...</div>
+
+    <div class="input-group">
+      <label>පාරිභෝගික දුරකථන අංකය</label>
+      <input type="tel" id="phone" placeholder="07XXXXXXXX" maxlength="10">
+    </div>
+
+    <button class="btn btn-add" onclick="processAction('loyaltyAddStamp')">+ Add 1 Stamp (මුද්දරයක් දෙන්න)</button>
+    <button class="btn btn-redeem" onclick="processAction('loyaltyRedeem')">🎁 Redeem Reward (තෑග්ග ලබාදෙන්න)</button>
+    <button class="btn btn-reset" onclick="processAction('loyaltyCashierReset')">🔄 Reset PIN (PIN අමතක නම්)</button>
+
+    <div class="loader" id="loader"></div>
+    <div id="msgBox" class="msg"></div>
+  </div>
+
+  <script>
+    // 👇 ඔයාගේ Web App URL එක හරියටම මෙතනට දාන්න 👇
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzUNv3bLJX2yfMmxfoWtDyETRQ3r0yLkC5eSA9kI4DTccE-UXV471luYE7_ZXB9sLfy/exec";
+    
+    let currentShopId = "";
+
+    window.onload = function() {
+      // URL එකෙන් Shop ID එක ගන්නවා (උදා: cashier/index.html?id=102)
+      const urlParams = new URLSearchParams(window.location.search);
+      currentShopId = urlParams.get('id');
+      
+      if(currentShopId) {
+        document.getElementById('shopIdDisplay').innerText = "Shop ID: " + currentShopId;
+      } else {
+        document.getElementById('shopIdDisplay').innerText = "Invalid Shop Link!";
+        document.getElementById('shopIdDisplay').style.background = "#f8d7da";
+      }
+    };
+
+    function processAction(actionType) {
+      const phone = document.getElementById('phone').value;
+      const msgBox = document.getElementById('msgBox');
+      const loader = document.getElementById('loader');
+
+      if(!currentShopId) {
+        showMsg("දෝෂයකි: ව්‍යාපාරික ID අංකය නොමැත.", false);
+        return;
+      }
+
+      if(phone.length !== 10 || isNaN(phone)) {
+        showMsg("කරුණාකර නිවැරදි ඉලක්කම් 10ක දුරකථන අංකයක් ලබාදෙන්න.", false);
+        return;
+      }
+
+      // Hide messages and show loader
+      msgBox.style.display = 'none';
+      loader.style.display = 'block';
+
+      const payload = {
+        action: actionType,
+        shopId: currentShopId,
+        phone: phone
+      };
+
+      fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      })
+      .then(res => res.json())
+      .then(data => {
+        loader.style.display = 'none';
+        if(data.success) {
+          showMsg(data.message, true);
+          document.getElementById('phone').value = ""; // Clear input after success
+        } else {
+          showMsg(data.error, false);
+        }
+      })
+      .catch(err => {
+        loader.style.display = 'none';
+        showMsg("අන්තර්ජාල සම්බන්ධතාවය පරීක්ෂා කරන්න.", false);
+      });
+    }
+
+    function showMsg(text, isSuccess) {
+      const msgBox = document.getElementById('msgBox');
+      msgBox.innerText = text;
+      msgBox.className = "msg " + (isSuccess ? "success" : "error");
+      msgBox.style.display = "block";
+    }
+  </script>
+</body>
+</html>

@@ -12,7 +12,7 @@
     .header h2 { margin: 0; color: #333; font-size: 24px; }
     .header p { margin: 5px 0 0 0; color: #777; font-size: 14px; }
     
-    .shop-id-badge { display: inline-block; background: #ffebee; color: #d32f2f; padding: 5px 15px; border-radius: 20px; font-weight: bold; margin-bottom: 20px; font-size: 14px;}
+    .shop-name-badge { display: inline-block; background: #ffebee; color: #d32f2f; padding: 8px 20px; border-radius: 25px; font-weight: bold; margin-bottom: 20px; font-size: 16px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);}
 
     .input-group { margin-bottom: 20px; text-align: left; }
     label { font-weight: bold; font-size: 14px; color: #555; display: block; margin-bottom: 8px; }
@@ -43,7 +43,8 @@
       <p>පාරිභෝගික මුද්දර ලබාදීම</p>
     </div>
 
-    <div class="shop-id-badge" id="shopIdDisplay">Shop ID: Loading...</div>
+    <!-- මෙතන තමයි කඩේ නම වැටෙන්නේ -->
+    <div class="shop-name-badge" id="shopNameDisplay">Loading Shop...</div>
 
     <div class="input-group">
       <label>පාරිභෝගික දුරකථන අංකය</label>
@@ -65,15 +66,26 @@
     let currentShopId = "";
 
     window.onload = function() {
-      // URL එකෙන් Shop ID එක ගන්නවා (උදා: cashier/index.html?id=102)
       const urlParams = new URLSearchParams(window.location.search);
       currentShopId = urlParams.get('id');
       
       if(currentShopId) {
-        document.getElementById('shopIdDisplay').innerText = "Shop ID: " + currentShopId;
+        // Database එකෙන් කඩේ නම ගෙන ඒම
+        fetch(`${APPS_SCRIPT_URL}?action=profile&id=${currentShopId}`)
+          .then(res => res.json())
+          .then(data => {
+            if(data.success) {
+              document.getElementById('shopNameDisplay').innerText = data.data.BusinessName;
+            } else {
+              document.getElementById('shopNameDisplay').innerText = "Shop ID: " + currentShopId;
+            }
+          })
+          .catch(err => {
+            document.getElementById('shopNameDisplay').innerText = "Shop ID: " + currentShopId;
+          });
       } else {
-        document.getElementById('shopIdDisplay').innerText = "Invalid Shop Link!";
-        document.getElementById('shopIdDisplay').style.background = "#f8d7da";
+        document.getElementById('shopNameDisplay').innerText = "Invalid Shop Link!";
+        document.getElementById('shopNameDisplay').style.background = "#f8d7da";
       }
     };
 
@@ -92,26 +104,18 @@
         return;
       }
 
-      // Hide messages and show loader
       msgBox.style.display = 'none';
       loader.style.display = 'block';
 
-      const payload = {
-        action: actionType,
-        shopId: currentShopId,
-        phone: phone
-      };
+      const payload = { action: actionType, shopId: currentShopId, phone: phone };
 
-      fetch(APPS_SCRIPT_URL, {
-        method: 'POST',
-        body: JSON.stringify(payload)
-      })
+      fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) })
       .then(res => res.json())
       .then(data => {
         loader.style.display = 'none';
         if(data.success) {
           showMsg(data.message, true);
-          document.getElementById('phone').value = ""; // Clear input after success
+          document.getElementById('phone').value = ""; 
         } else {
           showMsg(data.error, false);
         }

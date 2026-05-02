@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Business Dashboard | Social Map</title>
+  <style>
+    body { font-family: 'Segoe UI', sans-serif; background: #f4f7f9; margin: 0; padding: 0; }
+    .login-container, .dashboard-container { max-width: 400px; margin: 50px auto; padding: 25px; background: white; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); text-align: center; }
+    input { width: 100%; padding: 15px; margin: 10px 0; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; font-size: 16px; }
+    .btn { width: 100%; padding: 15px; background: #d32f2f; color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 16px; }
+    .stat-card { background: #fff; border: 1px solid #eee; padding: 20px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
+    .stat-number { font-size: 32px; font-weight: bold; color: #d32f2f; margin: 5px 0; }
+    .stat-label { color: #777; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
+    #dashboard { display: none; }
+  </style>
+</head>
+<body>
+
+  <!-- Login Section -->
+  <div class="login-container" id="loginBox">
+    <img src="https://via.placeholder.com/80/d32f2f/ffffff?text=SM" style="border-radius:20px; margin-bottom:15px;">
+    <h2>Client Login</h2>
+    <p style="color:#777; font-size:14px;">ඔබගේ ව්‍යාපාරික දත්ත බැලීමට ලොග් වන්න</p>
+    <input type="tel" id="uPhone" placeholder="දුරකථන අංකය (07XXXXXXXX)">
+    <input type="password" id="uPass" placeholder="මුරපදය (Password)">
+    <button class="btn" onclick="login()">Login</button>
+    <p id="loginMsg" style="color:red; font-size:13px; display:none;"></p>
+  </div>
+
+  <!-- Dashboard Section -->
+  <div class="dashboard-container" id="dashboard">
+    <div style="text-align:left; margin-bottom:20px;">
+      <h3 id="shopName" style="margin:0;">Business Name</h3>
+      <p style="margin:0; font-size:12px; color:gray;">Real-time Insights</p>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-label">මුළු ස්කෑන් වාර ගණන</div>
+      <div class="stat-number" id="scans">0</div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-label">Loyalty පාරිභෝගිකයින්</div>
+      <div class="stat-number" id="loyaltyUsers">0</div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-label">මුළු මුද්දර ලබාදීම්</div>
+      <div class="stat-number" id="stamps">0</div>
+    </div>
+
+    <button class="btn" style="background:#555;" onclick="location.reload()">Refresh Data 🔄</button>
+  </div>
+
+  <script>
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzUNv3bLJX2yfMmxfoWtDyETRQ3r0yLkC5eSA9kI4DTccE-UXV471luYE7_ZXB9sLfy/exec";
+
+    function login() {
+      const phone = document.getElementById('uPhone').value;
+      const pass = document.getElementById('uPass').value;
+      
+      fetch(`${APPS_SCRIPT_URL}?action=clientLogin&phone=${phone}&password=${pass}`)
+        .then(res => res.json()).then(data => {
+          if(data.success) {
+            localStorage.setItem('shopId', data.shopId);
+            localStorage.setItem('bName', data.businessName);
+            showDashboard();
+          } else {
+            const m = document.getElementById('loginMsg'); m.innerText = data.error; m.style.display="block";
+          }
+        });
+    }
+
+    function showDashboard() {
+      const shopId = localStorage.getItem('shopId');
+      document.getElementById('loginBox').style.display = 'none';
+      document.getElementById('dashboard').style.display = 'block';
+      document.getElementById('shopName').innerText = localStorage.getItem('bName');
+
+      fetch(`${APPS_SCRIPT_URL}?action=getClientStats&shopId=${shopId}`)
+        .then(res => res.json()).then(data => {
+          if(data.success) {
+            document.getElementById('scans').innerText = data.totalScans;
+            document.getElementById('loyaltyUsers').innerText = data.loyaltyCustomers;
+            document.getElementById('stamps').innerText = data.totalStamps;
+          }
+        });
+    }
+
+    // Auto login if already saved
+    if(localStorage.getItem('shopId')) showDashboard();
+  </script>
+</body>
+</html>

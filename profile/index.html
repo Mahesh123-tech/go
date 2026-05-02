@@ -5,85 +5,179 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Smart Profile | Social Map</title>
   <style>
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f9f9f9; text-align: center; margin: 0; padding: 20px; }
-    .card { background: white; max-width: 400px; margin: 10px auto; padding: 30px 20px; border-radius: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.08); }
-    .branding { font-weight: 900; color: #d32f2f; font-size: 20px; margin-bottom: 20px; letter-spacing: 1px; }
-    h2 { color: #333; font-size: 24px; margin-bottom: 5px; }
-    .status-text { color: #888; font-size: 14px; margin-bottom: 25px; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f9f9f9; margin: 0; padding: 0; display: flex; justify-content: center; min-height: 100vh; }
+    .profile-container { background: white; width: 100%; max-width: 400px; box-shadow: 0 0 20px rgba(0,0,0,0.05); min-height: 100vh; position: relative; display: flex; flex-direction: column; }
     
-    .btn { display: block; width: 85%; margin: 12px auto; padding: 14px; color: white; text-decoration: none; border-radius: 10px; font-weight: bold; font-size: 16px; transition: 0.3s; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-    .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.15); }
+    /* Dynamic Theme Banner */
+    .theme-banner { height: 120px; background-color: #d32f2f; border-bottom-left-radius: 30px; border-bottom-right-radius: 30px; display: flex; justify-content: center; align-items: flex-end; padding-bottom: 20px; transition: background-color 0.5s;}
+    .profile-img-placeholder { width: 80px; height: 80px; background: white; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 30px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: -40px; border: 4px solid white; }
     
-    .whatsapp { background: linear-gradient(45deg, #25D366, #128C7E); }
-    .maps { background: linear-gradient(45deg, #EA4335, #D32F2F); }
-    .facebook { background: linear-gradient(45deg, #1877F2, #0d5a9e); }
-    .instagram { background: linear-gradient(45deg, #E4405F, #833AB4); }
-    .menu { background: linear-gradient(45deg, #FF9800, #F57C00); }
+    .info-section { text-align: center; padding: 50px 20px 20px 20px; }
+    h1 { margin: 0; font-size: 24px; color: #333; }
+    p { color: #777; font-size: 14px; margin-top: 5px; }
+
+    .links-section { padding: 0 20px 30px 20px; display: flex; flex-direction: column; gap: 15px; }
     
-    .footer { margin-top: 30px; font-size: 12px; color: #999; }
-    .loader { border: 4px solid #f3f3f3; border-top: 4px solid #d32f2f; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 20px auto; }
+    /* Button Styles */
+    .btn { display: none; width: 100%; padding: 15px; border-radius: 10px; text-decoration: none; font-weight: bold; font-size: 16px; text-align: center; color: white; box-sizing: border-box; transition: transform 0.2s, box-shadow 0.2s; border: none; cursor: pointer; }
+    .btn:active { transform: scale(0.98); }
+    
+    .btn-wa { background: #25D366; }
+    .btn-maps { background: #EA4335; }
+    .btn-fb { background: #1877F2; }
+    .btn-ig { background: #E4405F; }
+    .btn-web { background: #333333; }
+    .btn-email { background: #FBBC05; color: #333; }
+    .btn-menu { background: #673AB7; }
+
+    /* Footer */
+    .footer { margin-top: auto; padding: 20px; text-align: center; font-size: 12px; color: #aaa; }
+
+    /* Loading Screen */
+    #loader { position: absolute; top:0; left:0; width:100%; height:100%; background:white; display:flex; flex-direction:column; justify-content:center; align-items:center; z-index: 100; }
+    .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #d32f2f; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    /* Modal for Menu PDF Viewer */
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
+    .modal-content { width: 95%; height: 85%; background: white; border-radius: 10px; overflow: hidden; position: relative; }
+    .modal iframe { width: 100%; height: 100%; border: none; }
+    .close-btn { position: absolute; bottom: 20px; padding: 12px 30px; background: #EA4335; color: white; font-weight: bold; border: none; border-radius: 25px; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 1001; }
   </style>
 </head>
 <body>
 
-  <div class="card" id="profileCard">
-    <div class="branding">🔴 SOCIAL MAP</div>
-    <h2 id="businessName">Loading...</h2>
-    <div class="status-text" id="statusMessage">ඔබගේ තොරතුරු ලබාගනිමින් පවතී...</div>
+  <div class="profile-container">
     
-    <div id="loader" class="loader"></div>
-    <div id="buttonsContainer"></div>
+    <!-- Loading Screen -->
+    <div id="loader">
+      <div class="spinner"></div>
+      <p style="margin-top:15px; font-weight:bold;">Loading Profile...</p>
+    </div>
+
+    <!-- Header Section -->
+    <div class="theme-banner" id="themeBanner">
+      <div class="profile-img-placeholder" id="profileIcon">🏢</div>
+    </div>
+
+    <!-- Info Section -->
+    <div class="info-section">
+      <h1 id="bName">Business Name</h1>
+      <p>Welcome to our Smart Profile</p>
+    </div>
+
+    <!-- Buttons Section -->
+    <div class="links-section">
+      <a href="#" id="btnWa" target="_blank" class="btn btn-wa">💬 WhatsApp</a>
+      <a href="#" id="btnMaps" target="_blank" class="btn btn-maps">📍 Google Maps</a>
+      <a href="#" id="btnFb" target="_blank" class="btn btn-fb">📘 Facebook</a>
+      <a href="#" id="btnIg" target="_blank" class="btn btn-ig">📸 Instagram</a>
+      <a href="#" id="btnWeb" target="_blank" class="btn btn-web">🌐 Website</a>
+      <a href="#" id="btnEmail" class="btn btn-email">✉️ Email Us</a>
+      
+      <!-- Menu Button triggers the internal viewer -->
+      <button id="btnMenu" class="btn btn-menu" onclick="openMenu()">📄 View Menu</button>
+    </div>
+
+    <div class="footer">
+      Powered by Mapa Solutions - Social Map
+    </div>
+
   </div>
-  
-  <div class="footer">Powered by Mapa Solutions - Social Map Unit</div>
+
+  <!-- Menu PDF Viewer Modal -->
+  <div id="menuModal" class="modal">
+    <div class="modal-content">
+      <iframe id="menuIframe" src=""></iframe>
+    </div>
+    <button class="close-btn" onclick="closeMenu()">Close Menu ✖</button>
+  </div>
 
   <script>
     // 👇 ඔයාගේ Web App URL එක හරියටම මෙතනට දාන්න 👇
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzUNv3bLJX2yfMmxfoWtDyETRQ3r0yLkC5eSA9kI4DTccE-UXV471luYE7_ZXB9sLfy/exec";
 
-    // URL එකෙන් ID එක හොයාගන්නවා (උදා: ?id=101)
-    const urlParams = new URLSearchParams(window.location.search);
-    const id = urlParams.get('id');
+    let menuPdfLink = "";
 
-    if(id) {
-      // Apps Script එකට කතා කරලා දත්ත ඉල්ලනවා
-      fetch(`${APPS_SCRIPT_URL}?action=profile&id=${id}`)
-        .then(res => res.json())
-        .then(data => {
-          document.getElementById('loader').style.display = 'none';
-          
-          if(data.error) {
-            document.getElementById('businessName').innerText = "ගැටළුවක් මතු විය!";
-            document.getElementById('businessName').style.color = "red";
-            document.getElementById('statusMessage').innerText = data.error;
-            return;
-          }
+    window.onload = function() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const id = urlParams.get('id');
 
-          const profile = data.data;
-          document.getElementById('businessName').innerText = profile.BusinessName;
-          document.getElementById('statusMessage').innerText = "Welcome!";
+      if(id) {
+        fetch(`${APPS_SCRIPT_URL}?action=profile&id=${id}`)
+          .then(res => res.json())
+          .then(data => {
+            document.getElementById('loader').style.display = 'none';
 
-          let buttonsHtml = '';
-          
-          // Sheet එකේ ලින්ක් එකක් තියෙනවා නම් විතරක් ඒ බොත්තම පෙන්වනවා
-          if(profile.WhatsApp) buttonsHtml += `<a href="${profile.WhatsApp}" class="btn whatsapp">💬 WhatsApp</a>`;
-          if(profile.Maps) buttonsHtml += `<a href="${profile.Maps}" class="btn maps">📍 Google Maps</a>`;
-          if(profile.Facebook) buttonsHtml += `<a href="${profile.Facebook}" class="btn facebook">📘 Facebook</a>`;
-          if(profile.Instagram) buttonsHtml += `<a href="${profile.Instagram}" class="btn instagram">📸 Instagram</a>`;
-          if(profile.MenuPDF) buttonsHtml += `<a href="${profile.MenuPDF}" class="btn menu">📄 Menu PDF</a>`;
+            if(data.success) {
+              const p = data.data;
 
-          document.getElementById('buttonsContainer').innerHTML = buttonsHtml;
-        })
-        .catch(err => {
-          document.getElementById('loader').style.display = 'none';
-          document.getElementById('businessName').innerText = "System Error!";
-          document.getElementById('statusMessage').innerText = "අන්තර්ජාල සම්බන්ධතාවය පරීක්ෂා කරන්න.";
-        });
-    } else {
-      document.getElementById('loader').style.display = 'none';
-      document.getElementById('businessName').innerText = "Invalid QR";
-      document.getElementById('statusMessage').innerText = "කරුණාකර නිවැරදි QR කේතය ස්කෑන් කරන්න.";
+              // Set Business Name
+              document.getElementById('bName').innerText = p.BusinessName;
+              
+              // Set Theme Color (If available)
+              if(p.ThemeColor && p.ThemeColor.trim() !== "") {
+                document.getElementById('themeBanner').style.backgroundColor = p.ThemeColor;
+              }
+
+              // Set Icon Letter (First letter of business)
+              document.getElementById('profileIcon').innerText = p.BusinessName.charAt(0).toUpperCase();
+
+              // Setup Buttons (Show only if data exists)
+              setupButton('btnWa', p.WhatsApp);
+              setupButton('btnMaps', p.Maps);
+              setupButton('btnFb', p.Facebook);
+              setupButton('btnIg', p.Instagram);
+              setupButton('btnWeb', p.Website);
+
+              if (p.Email) {
+                document.getElementById('btnEmail').href = "mailto:" + p.Email;
+                document.getElementById('btnEmail').style.display = "block";
+              }
+
+              if (p.MenuPDF) {
+                menuPdfLink = p.MenuPDF;
+                document.getElementById('btnMenu').style.display = "block";
+              }
+
+            } else {
+              document.getElementById('bName').innerText = "Profile Not Found";
+              document.getElementById('bName').style.color = "red";
+            }
+          })
+          .catch(err => {
+            document.getElementById('loader').style.display = 'none';
+            document.getElementById('bName').innerText = "Connection Error";
+          });
+      } else {
+        document.getElementById('loader').style.display = 'none';
+        document.getElementById('bName').innerText = "Invalid Link";
+      }
+    };
+
+    function setupButton(btnId, link) {
+      if(link && link.trim() !== "" && link !== "undefined") {
+        document.getElementById(btnId).href = link;
+        document.getElementById(btnId).style.display = "block";
+      }
+    }
+
+    // --- Internal PDF Viewer Logic ---
+    function openMenu() {
+      let finalUrl = menuPdfLink;
+      
+      // Convert Google Drive view link to preview link for embedding
+      if(finalUrl.includes("drive.google.com") && finalUrl.includes("/view")) {
+        finalUrl = finalUrl.replace(/\/view.*$/, "/preview");
+      }
+      
+      document.getElementById('menuIframe').src = finalUrl;
+      document.getElementById('menuModal').style.display = "flex";
+    }
+
+    function closeMenu() {
+      document.getElementById('menuModal').style.display = "none";
+      document.getElementById('menuIframe').src = ""; // Stop loading when closed
     }
   </script>
 </body>

@@ -3,81 +3,150 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Business Dashboard | Social Map</title>
+  <title>Business Portal | Social Map</title>
   <style>
-    body { font-family: 'Segoe UI', sans-serif; background: #f4f7f9; margin: 0; padding: 0; }
-    .login-container, .dashboard-container { max-width: 400px; margin: 50px auto; padding: 25px; background: white; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); text-align: center; }
-    input { width: 100%; padding: 15px; margin: 10px 0; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; font-size: 16px; }
-    .btn { width: 100%; padding: 15px; background: #d32f2f; color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 16px; }
-    .stat-card { background: #fff; border: 1px solid #eee; padding: 20px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
+    body { font-family: 'Segoe UI', sans-serif; background: #f4f7f9; margin: 0; padding: 0; display: flex; justify-content: center;}
+    .container { width: 100%; max-width: 400px; margin: 20px; padding: 25px; background: white; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); text-align: center; box-sizing: border-box;}
+    input { width: 100%; padding: 15px; margin: 10px 0; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; font-size: 16px; text-align: center; }
+    .btn { width: 100%; padding: 15px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 16px; margin-bottom: 10px; color: white; transition: 0.2s;}
+    .btn:active { transform: scale(0.98); }
+    
+    /* Tabs */
+    .tab-container { display: flex; background: #eee; border-radius: 10px; margin-bottom: 20px; overflow: hidden; }
+    .tab { flex: 1; padding: 12px; font-weight: bold; color: #777; cursor: pointer; transition: 0.3s; }
+    .tab.active { background: #d32f2f; color: white; }
+
+    /* Stats Cards */
+    .stat-card { background: #fff; border: 1px solid #eee; padding: 15px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
     .stat-number { font-size: 32px; font-weight: bold; color: #d32f2f; margin: 5px 0; }
-    .stat-label { color: #777; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
-    #dashboard { display: none; }
+    .stat-label { color: #777; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; }
+    
+    /* Cashier specific */
+    .input-label { text-align: left; font-size: 13px; font-weight: bold; color: #555; display: block; margin-top: 10px;}
+    .msg { padding: 15px; border-radius: 8px; font-weight: bold; display: none; margin-top: 10px; font-size: 14px;}
   </style>
 </head>
 <body>
 
   <!-- Login Section -->
-  <div class="login-container" id="loginBox">
+  <div class="container" id="loginBox">
     <img src="https://via.placeholder.com/80/d32f2f/ffffff?text=SM" style="border-radius:20px; margin-bottom:15px;">
-    <h2>Client Login</h2>
-    <p style="color:#777; font-size:14px;">ඔබගේ ව්‍යාපාරික දත්ත බැලීමට ලොග් වන්න</p>
+    <h2>Business Login</h2>
+    <p style="color:#777; font-size:14px;">ඔබගේ ව්‍යාපාරික පද්ධතියට ඇතුල්වන්න</p>
     <input type="tel" id="uPhone" placeholder="දුරකථන අංකය (07XXXXXXXX)">
     <input type="password" id="uPass" placeholder="මුරපදය (Password)">
-    <button class="btn" onclick="login()">Login</button>
+    <button class="btn" style="background:#d32f2f;" onclick="login()">Login</button>
     <p id="loginMsg" style="color:red; font-size:13px; display:none;"></p>
   </div>
 
-  <!-- Dashboard Section -->
-  <div class="dashboard-container" id="dashboard">
-    <div style="text-align:left; margin-bottom:20px;">
-      <h3 id="shopName" style="margin:0;">Business Name</h3>
-      <p style="margin:0; font-size:12px; color:gray;">Real-time Insights</p>
+  <!-- Main App Section -->
+  <div class="container" id="mainApp" style="display: none; padding-top: 20px;">
+    
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+      <div style="text-align:left;">
+        <h3 id="shopName" style="margin:0; color:#d32f2f;">Shop Name</h3>
+        <p style="margin:0; font-size:12px; color:gray;" id="shopIdDisplay">ID: --</p>
+      </div>
+      <button onclick="logout()" style="background:none; border:none; color:#777; text-decoration:underline; cursor:pointer;">Logout</button>
     </div>
 
-    <div class="stat-card">
-      <div class="stat-label">මුළු ස්කෑන් වාර ගණන</div>
-      <div class="stat-number" id="scans">0</div>
+    <!-- TABS -->
+    <div class="tab-container">
+      <div class="tab active" id="tab-stats" onclick="switchTab('stats')">📊 Dashboard</div>
+      <div class="tab" id="tab-cashier" onclick="switchTab('cashier')">🎁 Cashier</div>
     </div>
 
-    <div class="stat-card">
-      <div class="stat-label">Loyalty පාරිභෝගිකයින්</div>
-      <div class="stat-number" id="loyaltyUsers">0</div>
+    <!-- 1. DASHBOARD VIEW -->
+    <div id="view-stats">
+      <div class="stat-card">
+        <div class="stat-label">මුළු ස්කෑන් වාර ගණන</div>
+        <div class="stat-number" id="scans">...</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Loyalty පාරිභෝගිකයින්</div>
+        <div class="stat-number" id="loyaltyUsers">...</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">මුළු මුද්දර ලබාදීම්</div>
+        <div class="stat-number" id="stamps">...</div>
+      </div>
+      <button class="btn" style="background:#555; padding:10px;" onclick="fetchStats()">🔄 Refresh Data</button>
     </div>
 
-    <div class="stat-card">
-      <div class="stat-label">මුළු මුද්දර ලබාදීම්</div>
-      <div class="stat-number" id="stamps">0</div>
+    <!-- 2. CASHIER VIEW -->
+    <div id="view-cashier" style="display: none;">
+      <span class="input-label">පාරිභෝගික දුරකථන අංකය</span>
+      <input type="tel" id="cPhone" placeholder="07XXXXXXXX" maxlength="10">
+      
+      <span class="input-label">ලබාදෙන මුද්දර ගණන</span>
+      <input type="number" id="cStampCount" value="1" min="1">
+
+      <button class="btn" style="background:#2e7d32;" onclick="processAction('loyaltyAddStamp')">+ Add Stamps (මුද්දර දෙන්න)</button>
+      <button class="btn" style="background:#ff9800;" onclick="processAction('loyaltyRedeem')">🎁 Redeem Reward</button>
+      <button class="btn" style="background:#757575;" onclick="processAction('loyaltyCashierReset')">🔄 Reset PIN</button>
+
+      <div id="actionMsg" class="msg"></div>
     </div>
 
-    <button class="btn" style="background:#555;" onclick="location.reload()">Refresh Data 🔄</button>
   </div>
 
   <script>
+    // 👇 ඔයාගේ Web App URL එක හරියටම මෙතනට දාන්න 👇
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzUNv3bLJX2yfMmxfoWtDyETRQ3r0yLkC5eSA9kI4DTccE-UXV471luYE7_ZXB9sLfy/exec";
 
+    // --- Authentication ---
     function login() {
       const phone = document.getElementById('uPhone').value;
       const pass = document.getElementById('uPass').value;
+      document.getElementById('loginMsg').style.display="none";
+      document.querySelector('#loginBox .btn').innerText = "Loading...";
       
       fetch(`${APPS_SCRIPT_URL}?action=clientLogin&phone=${phone}&password=${pass}`)
         .then(res => res.json()).then(data => {
+          document.querySelector('#loginBox .btn').innerText = "Login";
           if(data.success) {
             localStorage.setItem('shopId', data.shopId);
             localStorage.setItem('bName', data.businessName);
-            showDashboard();
+            initApp();
           } else {
             const m = document.getElementById('loginMsg'); m.innerText = data.error; m.style.display="block";
           }
+        }).catch(err => {
+          document.querySelector('#loginBox .btn').innerText = "Login";
+          alert("Network Error!");
         });
     }
 
-    function showDashboard() {
-      const shopId = localStorage.getItem('shopId');
-      document.getElementById('loginBox').style.display = 'none';
-      document.getElementById('dashboard').style.display = 'block';
-      document.getElementById('shopName').innerText = localStorage.getItem('bName');
+    function logout() {
+      localStorage.clear();
+      location.reload();
+    }
 
+    function initApp() {
+      document.getElementById('loginBox').style.display = 'none';
+      document.getElementById('mainApp').style.display = 'block';
+      document.getElementById('shopName').innerText = localStorage.getItem('bName');
+      document.getElementById('shopIdDisplay').innerText = "ID: " + localStorage.getItem('shopId');
+      fetchStats();
+    }
+
+    // Auto login check
+    if(localStorage.getItem('shopId')) initApp();
+
+    // --- Tab Switching ---
+    function switchTab(tab) {
+      document.getElementById('tab-stats').className = "tab";
+      document.getElementById('tab-cashier').className = "tab";
+      document.getElementById('view-stats').style.display = "none";
+      document.getElementById('view-cashier').style.display = "none";
+
+      document.getElementById('tab-' + tab).className = "tab active";
+      document.getElementById('view-' + tab).style.display = "block";
+    }
+
+    // --- Stats Logic ---
+    function fetchStats() {
+      const shopId = localStorage.getItem('shopId');
       fetch(`${APPS_SCRIPT_URL}?action=getClientStats&shopId=${shopId}`)
         .then(res => res.json()).then(data => {
           if(data.success) {
@@ -88,8 +157,38 @@
         });
     }
 
-    // Auto login if already saved
-    if(localStorage.getItem('shopId')) showDashboard();
+    // --- Cashier Logic ---
+    function processAction(actionType) {
+      const shopId = localStorage.getItem('shopId');
+      const phone = document.getElementById('cPhone').value;
+      const count = document.getElementById('cStampCount').value;
+      const msgBox = document.getElementById('actionMsg');
+      
+      if(phone.length !== 10) {
+        showMsg("කරුණාකර නිවැරදි ඉලක්කම් 10ක අංකයක් දෙන්න.", false); return;
+      }
+      
+      msgBox.innerText = "Processing..."; msgBox.style.display="block"; msgBox.style.background="#eee"; msgBox.style.color="black";
+      
+      fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: actionType, shopId: shopId, phone: phone, stampCount: count }) })
+      .then(res => res.json()).then(data => {
+        if(data.success) { 
+          showMsg(data.message, true); 
+          document.getElementById('cPhone').value = ""; 
+          document.getElementById('cStampCount').value = 1;
+          fetchStats(); // Update stats immediately in the background
+        } else { 
+          showMsg(data.error, false); 
+        }
+      }).catch(err => showMsg("Network Error!", false));
+    }
+
+    function showMsg(text, success) {
+      let m = document.getElementById('actionMsg'); 
+      m.innerText = text; 
+      m.style.background = success ? "#d4edda" : "#f8d7da"; 
+      m.style.color = success ? "#155724" : "#721c24";
+    }
   </script>
 </body>
 </html>
